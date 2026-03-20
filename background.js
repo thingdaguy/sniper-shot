@@ -7,10 +7,21 @@ const COMMAND_TO_TYPE = {
 const STORAGE_KEYS = {
   prompt: "savedPrompt",
   apiKey: "savedApiKey",
+  model: "savedModel",
   result: "lastResult",
 };
   const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent";
+
+const DEFAULT_MODEL_NAME = "gemini-2.5-flash";
+const ALLOWED_MODEL_NAMES = new Set([
+  "gemini-3.1-pro-preview",
+  "gemini-3-flash-preview",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+]);
 async function getActiveTabId() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tabs || tabs.length === 0) return null;
@@ -37,8 +48,14 @@ function storageSet(items) {
   });
 }
 
-async function askGemini(apiKey, fullPrompt) {
-  const url = GEMINI_ENDPOINT + "?key=" + encodeURIComponent(apiKey);
+async function askGemini(apiKey, modelName, fullPrompt) {
+  const safeModel = String(modelName ?? "").trim();
+  const finalModelName = ALLOWED_MODEL_NAMES.has(safeModel) ? safeModel : DEFAULT_MODEL_NAME;
+
+  const url =
+    GEMINI_ENDPOINT.replace("{MODEL_NAME}", encodeURIComponent(finalModelName)) +
+    "?key=" +
+    encodeURIComponent(apiKey);
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -73,15 +90,6 @@ function buildPrompt(userPrompt, context) {
   return (
     prompt +
     "\n\n" +
-    "Title: " +
-    context.title +
-    "\n" +
-    "URL: " +
-    context.url +
-    "\n" +
-    "Selection: " +
-    context.selection +
-    "\n\n" +
     "Content:\n" +
     context.content
   );
@@ -94,9 +102,10 @@ async function runAnalyzeAndStore() {
     return;
   }
 
-  const cfg = await storageGet([STORAGE_KEYS.prompt, STORAGE_KEYS.apiKey]);
+  const cfg = await storageGet([STORAGE_KEYS.prompt, STORAGE_KEYS.apiKey, STORAGE_KEYS.model]);
   const prompt = String(cfg[STORAGE_KEYS.prompt] ?? "").trim();
   const apiKey = String(cfg[STORAGE_KEYS.apiKey] ?? "").trim();
+  const modelName = String(cfg[STORAGE_KEYS.model] ?? "").trim();
 
   if (!prompt) {
     await storageSet({ [STORAGE_KEYS.result]: "Error: Missing saved prompt in popup." });
@@ -117,7 +126,7 @@ async function runAnalyzeAndStore() {
   try {
     const fullPrompt = buildPrompt(prompt, contextResp.context);
     console.log("BACKGROUND: ",fullPrompt);
-    const result = await askGemini(apiKey, fullPrompt);
+    const result = await askGemini(apiKey, modelName, fullPrompt);
     console.log(result);
     await storageSet({ [STORAGE_KEYS.result]: result });
   } catch (err) {
@@ -158,19 +167,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "saveConfig") {
     const prompt = String(msg.prompt ?? "").trim();
     const apiKey = String(msg.apiKey ?? "").trim();
+    const modelName = String(msg.model ?? "").trim();
     void storageSet({
       [STORAGE_KEYS.prompt]: prompt,
       [STORAGE_KEYS.apiKey]: apiKey,
+      [STORAGE_KEYS.model]: modelName,
     }).then(() => sendResponse({ ok: true }));
     return true;
   }
 
   if (msg.type === "getConfig") {
-    void storageGet([STORAGE_KEYS.prompt, STORAGE_KEYS.apiKey]).then((items) => {
+    void storageGet([STORAGE_KEYS.prompt, STORAGE_KEYS.apiKey, STORAGE_KEYS.model]).then((items) => {
       sendResponse({
         ok: true,
         prompt: String(items[STORAGE_KEYS.prompt] ?? ""),
         apiKey: String(items[STORAGE_KEYS.apiKey] ?? ""),
+        model: String(items[STORAGE_KEYS.model] ?? DEFAULT_MODEL_NAME),
       });
     });
     return true;
