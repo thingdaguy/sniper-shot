@@ -6,6 +6,7 @@
   let containerEl = null;
   let shadowRoot = null;
   let outputEl = null;
+  const MAX_WORDS_PER_REQUEST = 10000;
 
   function randomContainerId() {
     return (
@@ -40,7 +41,7 @@
     let content = "";
     try {
       const bodyText = document.body?.innerText || "";
-      content = String(bodyText).slice(0, 3000);
+      content = String(bodyText).slice(0, MAX_WORDS_PER_REQUEST);
     } catch {
       content = "";
     }
@@ -55,65 +56,50 @@
     containerEl = document.createElement("div");
     containerEl.id = randomContainerId();
     containerEl.style.position = "fixed";
-    containerEl.style.bottom = "10px";
-    containerEl.style.right = "10px";
+    containerEl.style.bottom = "2px";
+    containerEl.style.right = "6px";
     containerEl.style.zIndex = "999999999";
-    containerEl.style.width = "220px";
-    containerEl.style.pointerEvents = "auto";
+    containerEl.style.pointerEvents = "none"; 
 
     const parent = document.body || document.documentElement;
     parent.appendChild(containerEl);
+
     shadowRoot = containerEl.attachShadow({ mode: "closed" });
 
     shadowRoot.innerHTML = `
       <style>
-        :host { all: initial; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-        .wrap{
-          background: rgba(16,16,16,0.96);
-          color: #eaeaea;
-          border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 12px;
-          box-shadow: 0 18px 45px rgba(0,0,0,0.45);
-          padding: 10px;
-          backdrop-filter: blur(6px);
-        }
-        textarea{
-          width: 100%;
-          height: 120px;
-          box-sizing: border-box;
+        :host { all: initial; }
+
+        .bar {
+          font-family: system-ui, Arial;
+          font-size: 10px;
+          color: rgba(255,255,255,0.75);
           background: rgba(0,0,0,0.55);
-          color: #d7d7d7;
-          border: 1px solid rgba(255,255,255,0.10);
-          border-radius: 10px;
-          padding: 8px 9px;
-          outline: none;
-          font-size: 12px;
-          resize: none;
-          white-space: pre-wrap;
-          overflow: auto;
-        }
-        .meta{
-          margin-top: 7px;
-          font-size: 11px;
-          color: rgba(255,255,255,0.62);
-          line-height: 1.2;
-          user-select: none;
+          padding: 2px 6px;
+          border-radius: 6px;
+          max-width: 700px;
+
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          backdrop-filter: blur(4px);
         }
       </style>
-      <div class="wrap">
-        <textarea id="out" readonly></textarea>
-        <div class="meta">Ctrl+Shift+L to close</div>
-      </div>
+
+      <div class="bar" id="out"></div>
     `;
 
     outputEl = shadowRoot.getElementById("out");
 
     visible = true;
+    console.log("CONTENT: open UI")
   }
 
   function setOutput(text) {
     if (!outputEl) return;
-    outputEl.value = String(text ?? "");
+    outputEl.textContent = String(text ?? "");
+    console.log("CONTENT: change output text "+text)
   }
 
   function toggleResult(resultText) {
