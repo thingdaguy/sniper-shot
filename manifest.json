@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Google Docs Offline Agent",
+  "name": "Translate Offline Agent",
   "version": "1.0",
   "icons": {
     "16": "public/logo16.png",
     "48": "public/logo48.png",
     "128": "public/logo128.png"
   },
-  "description": "Lightweight AI assistant popup using the Gemini API.",
+  "description": "Lightweight AI assistant popup using the Google API.",
   "permissions": ["tabs", "storage"],
   "host_permissions": ["https://generativelanguage.googleapis.com/*"],
   "background": {
