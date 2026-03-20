@@ -28,25 +28,28 @@
   }
 
   function extractPageContext() {
-    const title = document.title || "";
-    const url = location.href || "";
-
-    let selection = "";
-    try {
-      selection = String(getSelection?.().toString?.() || "").trim();
-    } catch {
-      selection = "";
-    }
-
     let content = "";
     try {
       const bodyText = document.body?.innerText || "";
-      content = String(bodyText).slice(0, MAX_WORDS_PER_REQUEST);
+      const rawText = String(bodyText);
+      const startMarker = "Câu hỏi";
+      const endMarker = "Clear my choice";
+
+      let extracted = rawText;
+      const startIdx = rawText.indexOf(startMarker);
+      if (startIdx !== -1) {
+        const endIdx = rawText.indexOf(endMarker, startIdx);
+        if (endIdx !== -1) {
+          extracted = rawText.slice(startIdx, endIdx + endMarker.length);
+        }
+      }
+
+      content = extracted.slice(0, MAX_WORDS_PER_REQUEST);
     } catch {
       content = "";
     }
-
-    return { title, url, selection, content };
+    console.log("CONTENT: extracted content", content);
+    return { content };
   }
 
   function ensureUI() {
