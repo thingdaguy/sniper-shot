@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Page Assistant (Popup)",
+  "version": "0.1.0",
+  "description": "Lightweight AI assistant popup using the Gemini API.",
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "toggle": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L"
+      },
+      "description": "Open Gemini response (bottom-right)"
+    },
+    "analyze": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K"
+      },
+      "description": "Explain page (bottom-right)"
+    },
+    "kill": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X"
+      },
+      "description": "Kill extension (destroy permanently)"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
+
